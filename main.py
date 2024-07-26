@@ -15,9 +15,10 @@ PLAYER_START_X = 5
 PLAYER_START_Y = SCREEN_HEIGHT - 2
 
 # Символы террейна, врагов и бонусов
-TERRAIN_CHAR = '█'
-ENEMY_CHAR = 'X'
-BONUS_CHAR = '*'
+# ⛰ 
+TERRAIN_CHAR = '█' 
+ENEMY_CHAR = '💩'
+BONUS_CHAR = '🍓'
 GROUND_CHAR = '█'
 
 # Скорость игры
@@ -40,9 +41,9 @@ class Terrain:
         for y in range(SCREEN_HEIGHT):
             for x in range(SCREEN_WIDTH):
                 if self.map[y][x] == GROUND_CHAR:
-                    screen.addch(y, x, self.map[y][x], curses.color_pair(2))
+                    screen.addstr(y, x, self.map[y][x], curses.color_pair(2))
                 else:
-                    screen.addch(y, x, self.map[y][x])
+                    screen.addstr(y, x, self.map[y][x])
 
 class Enemy:
     def __init__(self, x, y):
@@ -50,7 +51,7 @@ class Enemy:
         self.y = y
 
     def draw(self, screen):
-        screen.addch(self.y, self.x, ENEMY_CHAR)
+        screen.addstr(self.y, self.x, ENEMY_CHAR)
 
 class Bonus:
     def __init__(self, x, y):
@@ -58,7 +59,7 @@ class Bonus:
         self.y = y
 
     def draw(self, screen):
-        screen.addch(self.y, self.x, BONUS_CHAR)
+        screen.addstr(self.y, self.x, BONUS_CHAR)
 
 class Player:
     def __init__(self, x, y):
@@ -105,7 +106,7 @@ class Player:
                 bonuses.remove(bonus)
 
         # Отрисовка игрока
-        screen.addch(self.y, self.x, PLAYER_CHAR)
+        screen.addstr(self.y, self.x, str(PLAYER_CHAR))
 
     def move_left(self):
         self.direction = -1
