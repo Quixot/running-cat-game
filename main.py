@@ -9,6 +9,8 @@ import random
 SCREEN_HEIGHT = 20
 SCREEN_WIDTH = 120
 
+# Скорость игры
+FPS = 30
 
 # Начальная позиция игрока
 PLAYER_START_X = 2
@@ -16,19 +18,26 @@ PLAYER_START_Y = SCREEN_HEIGHT - 2
 
 
 # Игровые персонажи и объекты
-PLAYER_CHAR = '🐱'
+PLAYER_CHAR = '😽'
 ENEMY_CHAR = '💩'
-BONUS_CHAR = '🍓'
-TERRAIN_CHAR = '📦' 
-GROUND_CHAR = '📦'
+BONUS_CHAR = (
+    ('🍏','🍎'), 
+    ('🍉','🍇'), 
+    ('🍒','🍓'), 
+    ('🌈', '🌞'),
+    ('🌲', '🌳', '🌴', '🌵'),
+    ('🍄'),
+    ('🍻=🍺'),
+    ('💳')
+)
+TERRAIN_CHAR = '🌄'
+GROUND_CHAR = '🌅'
 
 # Не использовать 2 раза клетку если на ней уже есть объект
 USING_CELLS = set()
 
 
 
-# Скорость игры
-FPS = 30
 
 class Terrain:
     def __init__(self):
@@ -76,20 +85,21 @@ class Bonus:
     def __init__(self, x, y):
         self.x = x
         self.y = y
+        self.bonus = random.choice(BONUS_CHAR) # Рандомный эмоджи бонуса
 
     def draw(self, screen):
-        screen.addstr(self.y, self.x, BONUS_CHAR)
+        screen.addstr(self.y, self.x,random.choice(self.bonus))
 
 class Player:
-    def __init__(self, x, y):
+    def __init__(self, x, y, score=0, enemydown=0):
         self.x = x
         self.y = y
         self.vel_x = 0
         self.vel_y = 0
         self.on_ground = True
         self.direction = 0  # -2 для влево, 2 для вправо, 0 для остановки
-        self.score = 0
-        self.enemydown = 0
+        self.score = score
+        self.enemydown = enemydown
 
     def update(self, screen, terrain, enemies, bonuses):
         # Применение гравитации
@@ -114,14 +124,20 @@ class Player:
         # Проверка столкновения с врагами
         for enemy in enemies:
             
-            if self.x == enemy.x and self.y + 1 == enemy.y and not self.on_ground:
+            # if (self.x == enemy.x and self.y + 1 == enemy.y)\
+            #     or (self.x == enemy.x - 1 and self.y + 1 == enemy.y)\
+            #     or (self.x == enemy.x + 1 and self.y + 1 == enemy.y) and not self.on_ground:
                 
-                self.enemydown += 1
-                enemies.remove(enemy)
+            #     self.enemydown += 1
+            #     enemies.remove(enemy)
 
-                self.vel_y = -3  # Пружинистое действие при ударе сверху
-            elif self.x == enemy.x and self.y == enemy.y:
+            #     self.vel_y = -3  # Пружинистое действие при ударе сверху
+
+            if self.x == enemy.x and self.y == enemy.y:
                 return "game over"
+            
+            elif self.x == SCREEN_WIDTH - 2:
+                return "next level"
                 
 
         # Проверка столкновения с бонусами
@@ -154,9 +170,9 @@ class Player:
             self.on_ground = False
 
 class Game:
-    def __init__(self, screen):
+    def __init__(self, screen, score, enemydown):
         self.screen = screen
-        self.player = Player(PLAYER_START_X, PLAYER_START_Y)
+        self.player = Player(PLAYER_START_X, PLAYER_START_Y, score, enemydown)
         self.terrain = Terrain()
 
         
@@ -170,10 +186,12 @@ class Game:
             
             if enemy_pos % 2 == 0:
                 self.enemies.append(Enemy(enemy_pos, SCREEN_HEIGHT - 2))
+                USING_CELLS.add(enemy_pos)
             else:
                 self.enemies.append(Enemy(enemy_pos + 1, SCREEN_HEIGHT - 2))
+                USING_CELLS.add(enemy_pos + 1)
             
-            USING_CELLS.add(enemy_pos)
+            
 
 
         
@@ -187,10 +205,12 @@ class Game:
             
             if bonus_pos % 2 == 0:
                 self.bonuses.append(Bonus(bonus_pos, SCREEN_HEIGHT - 2))
+                USING_CELLS.add(bonus_pos)
             else:
                 self.bonuses.append(Bonus(bonus_pos + 1, SCREEN_HEIGHT - 2))
+                USING_CELLS.add(bonus_pos + 1)
             
-            USING_CELLS.add(bonus_pos)
+            
 
         self.running = True
 
@@ -204,7 +224,7 @@ class Game:
             bonus.draw(self.screen)
         result = self.player.update(self.screen, self.terrain, self.enemies, self.bonuses)
         self.screen.addstr(0, 0, f'Score: {self.player.score}')
-        self.screen.addstr(2, 0, f'Enemies terminated: {self.player.enemydown}')
+        # self.screen.addstr(2, 0, f'Enemies terminated: {self.player.enemydown}')
         self.screen.refresh()
 
         # Продолжение движения в воздухе
@@ -217,11 +237,23 @@ class Game:
         if result == "game over":
             self.screen.addstr(SCREEN_HEIGHT // 2, SCREEN_WIDTH // 2 - 5, "GAME OVER", curses.color_pair(1))
             self.screen.refresh()
-            time.sleep(2)
-            self.stop()
+            time.sleep(1)
+            # self.stop()
+            self.reload(0, 0)
+
+        if result == "next level":
+            self.screen.addstr(SCREEN_HEIGHT // 2, SCREEN_WIDTH // 2 - 5, "NEXT LEVEL", curses.color_pair(1))
+            self.screen.refresh()
+            time.sleep(1)
+            self.reload(self.player.score, self.player.enemydown)
 
     def stop(self):
         self.running = False
+
+    def reload(self, score, enemydown):
+        self.__init__(self.screen, score, enemydown)
+        
+
 
 def main(stdscr):
     curses.curs_set(0)
@@ -233,7 +265,7 @@ def main(stdscr):
     curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
     curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)  # Цвет нижнего ряда
 
-    game = Game(stdscr)
+    game = Game(stdscr, 0, 0)
 
     def on_press(key):
         try:
