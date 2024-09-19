@@ -263,9 +263,6 @@ class Game:
 
 
 def main(stdscr):
-    pprint(sys.path)
-    pprint('******************')
-    pprint(sys.modules)
     curses.curs_set(0)
     stdscr.nodelay(1)
     stdscr.timeout(1000 // FPS)
